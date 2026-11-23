@@ -7,7 +7,7 @@ name = "datos-colombia"
 version = "0.1.0"
 description = "Extracción y normalización de datos abiertos de Colombia"
 requires-python = ">=3.10"
-dependencies = ["requests>=2.31", "pyarrow>=15"]
+dependencies = ["requests>=2.31", "pyarrow>=15", "psycopg[binary]>=3.1"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]

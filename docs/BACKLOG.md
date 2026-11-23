@@ -4,19 +4,17 @@
 
 ## Fase 0 — Arranque
 
-- 🟡 BanRep: `DF_CBR_DAILY_HIST` devuelve 326 obs en 15 días → varias series
-  por dataflow. Inspeccionar `SUBJECT` y filtrar/mapear antes de publicar.
+- 🟡 BanRep: catálogo `serie_id` → nombre legible y unidad (p. ej.
+  `ibr:IRIBRM00.ER` = IBR overnight efectiva) en `docs/FUENTES.md` o tabla `kpi`.
+- 🟡 GDELT: el Mac quedó con 429 repetidos; validar desde GitHub Actions (otra IP).
 - 🟡 Banco Mundial intermitente: si persiste, evaluar API alternativa del Banco
   Mundial o dejarlo como fuente semanal con tolerancia a fallas.
-- 🔴 Crear proyecto Neon Free (us-east-1); crear roles `escritor_cron` y
-  `lector` en consola; aplicar `sql/00_schemas.sql` y `sql/01_grants.sql`.
-- 🟡 Cargador `raw → Postgres` (`python -m datos_colombia cargar`): upsert de
-  Parquet en `raw_series.observaciones` por (fuente, serie_id, fecha).
-- 🟡 Secrets en GitHub (`DATABASE_URL`, `DATOS_GOV_APP_TOKEN`) y encender el cron
-  de `extraer.yml`.
+- 🔴 Secret `DATABASE_URL` (escritor_cron) en GitHub; agregar paso `cargar` a
+  `extraer.yml` y encender el cron.
+- 🟢 Postgres de servicio en `ci.yml` para correr `tests/test_db.py` en CI.
 - 🟡 Crear Proyecto en claude.ai "Datos Colombia" con
   `docs/claude/instrucciones-proyecto.md` y sincronizar el repo.
-- 🟡 Extensión Postgres en Claude Desktop con el rol `lector` de Neon.
+- 🟡 Probar el conector MCP local desde Claude Code (`/mcp`) con `DATABASE_URL_LECTOR` exportada.
 - 🟢 Solicitar app token de datos.gov.co.
 - 🟢 Código de conducta y etiquetas de issues (`fuente`, `datos`, `buena-primera-tarea`).
 

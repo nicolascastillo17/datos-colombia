@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "datos-colombia-postgres": {
+      "command": "npx",
+      "args": ["-y", "@bytebase/dbhub@1.2.3", "--transport", "stdio", "--config", "mcp/dbhub.toml"],
+      "env": {
+        "DATABASE_URL_LECTOR": "${DATABASE_URL_LECTOR}"
+      }
+    }
+  }
+}

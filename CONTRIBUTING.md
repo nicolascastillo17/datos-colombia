@@ -12,6 +12,8 @@ python -m datos_colombia probar   # requiere internet; no escribe nada
 ```
 
 No se necesita acceso a la base de datos: `extraer` deja Parquet en `data/`.
+Las pruebas de base de datos (`tests/test_db.py`) se omiten salvo que
+`TEST_DATABASE_URL` apunte a un Postgres desechable con rol dueño.
 
 ## Flujo
 

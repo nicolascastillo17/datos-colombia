@@ -41,7 +41,25 @@ SDMX_ESPECIFICO = b"""<?xml version="1.0"?>
 def test_banrep_generico():
     obs = banrep_sdmx.parsear(SDMX_GENERICO, "tpm")
     assert [(o.fecha, o.valor) for o in obs] == [(date(2026, 11, 22), 12.25), (date(2026, 11, 23), 12.25)]
-    assert obs[0].serie_id == "tpm:IRCBRM01" and obs[0].frecuencia == "diaria" and obs[0].unidad == "PA"
+    assert obs[0].serie_id == "tpm:IRCBRM01.PA" and obs[0].frecuencia == "diaria" and obs[0].unidad == "PA"
+
+
+def test_banrep_series_con_mismo_subject_y_distinta_unidad():
+    """Caso real IBR 2026-11-23: IRIBRM00 efectiva (ER) y nominal (NR)."""
+    def serie(unidad, valor):
+        return f"""<generic:Series><generic:SeriesKey>
+          <generic:Value id="REFERENCE_AREA" value="CO"/><generic:Value id="SUBJECT" value="IRIBRM00"/>
+          <generic:Value id="EXPENDITURE" value="_Z"/><generic:Value id="ACTIVITY" value="_Z"/>
+          <generic:Value id="ADJUSTMENT" value="_Z"/><generic:Value id="UNIT_MEASURE" value="{unidad}"/>
+          <generic:Value id="FREQ" value="D"/></generic:SeriesKey>
+          <generic:Attributes><generic:Value id="DOMAIN" value="FINMARK"/></generic:Attributes>
+          <generic:Obs><generic:ObsDimension value="20261123"/><generic:ObsValue value="{valor}"/></generic:Obs>
+        </generic:Series>"""
+    xml = f"""<message:GenericData xmlns:message="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message"
+      xmlns:generic="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/data/generic"><message:DataSet>
+      {serie("ER", "9.45")}{serie("NR", "9.05")}</message:DataSet></message:GenericData>"""
+    obs = banrep_sdmx.parsear(xml.encode(), "ibr")
+    assert {o.serie_id: o.valor for o in obs} == {"ibr:IRIBRM00.ER": 9.45, "ibr:IRIBRM00.NR": 9.05}
 
 
 def test_banrep_formatos_de_periodo():
@@ -123,3 +141,17 @@ def test_guardar_parquet(tmp_path):
     tabla = pq.read_table(ruta)
     assert tabla.num_rows == 2
     assert tabla.column_names == ["fuente", "conjunto", "serie_id", "fecha", "valor", "unidad", "frecuencia", "extraido_en"]
+
+
+def test_env_sobrescribe_shell_y_quita_comillas(tmp_path, monkeypatch):
+    from datos_colombia.comun import config
+
+    env = tmp_path / ".env"
+    env.write_text('DATABASE_URL="postgresql://escritor@x/db"\nDATOS_GOV_APP_TOKEN=\n# comentario\n', encoding="utf-8")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://otro-proyecto@y/db")
+    monkeypatch.setenv("DATOS_GOV_APP_TOKEN", "token-shell")
+    config._cargar_env(env)
+    import os
+
+    assert os.environ["DATABASE_URL"] == "postgresql://escritor@x/db"
+    assert os.environ["DATOS_GOV_APP_TOKEN"] == "token-shell"  # vacío en .env no pisa

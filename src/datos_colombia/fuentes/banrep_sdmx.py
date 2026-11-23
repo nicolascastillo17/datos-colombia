@@ -32,6 +32,17 @@ DATAFLOWS = {
 
 FRECUENCIAS = {"D": "diaria", "M": "mensual", "Q": "trimestral", "A": "anual"}
 
+# Dimensiones que distinguen series dentro de un dataflow (estructura OECD/STES).
+# Observado 2026-11-23: IBR publica SUBJECT=IRIBRM00 dos veces, con
+# UNIT_MEASURE=ER (efectiva) y NR (nominal). "_Z" = no aplica → se omite.
+DIMENSIONES_SERIE = ("SUBJECT", "EXPENDITURE", "ACTIVITY", "ADJUSTMENT", "UNIT_MEASURE")
+
+
+def serie_id(conjunto: str, dims: dict) -> str:
+    """'ibr' + {SUBJECT: IRIBRM00, UNIT_MEASURE: ER, ...} → 'ibr:IRIBRM00.ER'."""
+    partes = [dims[d] for d in DIMENSIONES_SERIE if dims.get(d) and dims[d] != "_Z"]
+    return f"{conjunto}:{'.'.join(partes) or 'serie'}"
+
 
 def _local(tag: str) -> str:
     return tag.rsplit("}", 1)[-1]
@@ -76,8 +87,7 @@ def parsear(xml: bytes | str, conjunto: str) -> list[Observacion]:
         for clave in _hijos(serie, "SeriesKey"):
             for v in clave:
                 dims[v.get("id")] = v.get("value")
-        sujeto = dims.get("SUBJECT") or dims.get("SERIES") or "serie"
-        serie_id = f"{conjunto}:{sujeto}"
+        sid = serie_id(conjunto, dims)
         unidad = dims.get("UNIT_MEASURE")
         frecuencia = FRECUENCIAS.get(dims.get("FREQ", ""), dims.get("FREQ"))
         for o in _hijos(serie, "Obs"):
@@ -93,7 +103,7 @@ def parsear(xml: bytes | str, conjunto: str) -> list[Observacion]:
             if periodo is None:
                 continue
             obs.append(
-                Observacion(FUENTE, conjunto, serie_id, _fecha(periodo), a_float(valor), unidad, frecuencia)
+                Observacion(FUENTE, conjunto, sid, _fecha(periodo), a_float(valor), unidad, frecuencia)
             )
     return obs
 
@@ -101,6 +111,7 @@ def parsear(xml: bytes | str, conjunto: str) -> list[Observacion]:
 def descargar(conjunto: str, desde: str | None = None, rapido: bool = False) -> bytes:
     df = DATAFLOWS[conjunto]
     params = {"dimensionAtObservation": "TIME_PERIOD", "detail": "full"}
+    # startPeriod se respeta solo por año (observado 2026-11-23: desde 2026-11-01 → datos desde 2026-01-02)
     if desde:
         params["startPeriod"] = desde
     s, t = (sesion(reintentos=1), TIMEOUT_PROBAR) if rapido else (sesion(), TIMEOUT)

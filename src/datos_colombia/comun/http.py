@@ -14,13 +14,14 @@ TIMEOUT_PROBAR = (10, 20)  # `probar` falla rápido en vez de esperar minutos
 TIMEOUT_LENTO = (10, 90)  # fuentes que tardan >20 s en responder aun estando sanas (GDELT)
 
 
-def sesion(reintentos: int = 4) -> requests.Session:
+def sesion(reintentos: int = 4, reintentar_429: bool = True) -> requests.Session:
+    """reintentar_429=False para APIs que penalizan la insistencia (GDELT)."""
     s = requests.Session()
     s.headers["User-Agent"] = USER_AGENT
     politica = Retry(
         total=reintentos,
         backoff_factor=2,
-        status_forcelist=(429, 500, 502, 503, 504),
+        status_forcelist=(429, 500, 502, 503, 504) if reintentar_429 else (500, 502, 503, 504),
         allowed_methods=("GET", "HEAD"),
         respect_retry_after_header=True,
     )

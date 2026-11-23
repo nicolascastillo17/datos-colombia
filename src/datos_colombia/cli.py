@@ -1,4 +1,4 @@
-"""CLI: python -m datos_colombia {probar|extraer} ..."""
+"""CLI: python -m datos_colombia {probar|extraer|cargar|aplicar-sql} ..."""
 
 from __future__ import annotations
 
@@ -19,6 +19,9 @@ FUENTES = {
     "fedesarrollo": (fedesarrollo.probar, fedesarrollo.extraer),
 }
 
+# nombre en el CLI → directorio en data/raw (cuando difieren)
+DIR_RAW = {"dane_ipc": "dane"}
+
 
 def _correr(nombre: str, funcion, verbose: bool) -> bool:
     t0 = time.monotonic()
@@ -36,6 +39,23 @@ def _correr(nombre: str, funcion, verbose: bool) -> bool:
         return False
 
 
+def _cargar(fuente: str, todo: bool):
+    from datos_colombia.comun import cargador, db
+
+    def ejecutar():
+        with db.conectar("DATABASE_URL") as conexion:
+            return cargador.cargar(conexion, None if fuente == "todas" else DIR_RAW.get(fuente, fuente), todo)
+
+    return ejecutar
+
+
+def _aplicar_sql():
+    from datos_colombia.comun import db
+
+    with db.conectar("DATABASE_URL_OWNER") as conexion:
+        return "aplicados: " + ", ".join(db.aplicar_sql(conexion))
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="datos_colombia")
     p.add_argument("-v", "--verbose", action="store_true")
@@ -43,7 +63,16 @@ def main(argv: list[str] | None = None) -> int:
     for cmd in ("probar", "extraer"):
         s = sub.add_parser(cmd)
         s.add_argument("fuente", nargs="?", default="todas", choices=[*FUENTES, "todas"])
+    s = sub.add_parser("cargar", help="data/raw → raw_series.observaciones (DATABASE_URL)")
+    s.add_argument("fuente", nargs="?", default="todas", choices=[*FUENTES, "todas"])
+    s.add_argument("--todo", action="store_true", help="todas las particiones, no solo la última")
+    sub.add_parser("aplicar-sql", help="aplica sql/NN_*.sql en orden (DATABASE_URL_OWNER, solo local)")
     args = p.parse_args(argv)
+
+    if args.cmd == "aplicar-sql":
+        return 0 if _correr("aplicar-sql", _aplicar_sql, args.verbose) else 1
+    if args.cmd == "cargar":
+        return 0 if _correr(f"cargar {args.fuente}", _cargar(args.fuente, args.todo), args.verbose) else 1
 
     nombres = list(FUENTES) if args.fuente == "todas" else [args.fuente]
     indice = 0 if args.cmd == "probar" else 1

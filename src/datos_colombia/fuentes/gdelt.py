@@ -8,6 +8,8 @@ Verificado 2026-11-23: mode=timelinetone&format=json devuelve
   promedia por día calendario (UTC).
 - El día en curso está incompleto (primera prueba: tono 0.0 hoy): se excluye.
 - Responde lento (20-50 s) aun estando sana: usa TIMEOUT_LENTO.
+- Devuelve 429 tras varias consultas seguidas desde la misma IP (observado
+  2026-11-23 tras 3 corridas en 10 min): no reintentar en caliente.
 - La API cubre una ventana reciente: la historia se construye acumulando
   ejecuciones diarias. GDELT pide espaciar las peticiones (~1 cada 5 s).
 """
@@ -19,12 +21,13 @@ from collections import defaultdict
 from datetime import date, datetime, timezone
 
 from datos_colombia.comun.almacen import Observacion, a_float, guardar_observaciones
+from datos_colombia.comun.errores import Aviso
 from datos_colombia.comun.http import TIMEOUT_LENTO, sesion
 
 FUENTE = "gdelt"
 BASE = "https://api.gdeltproject.org/api/v2/doc/doc"
 CONJUNTO = "tono_noticias"
-PAUSA_S = 6
+PAUSA_S = 10  # GDELT pide ≥5 s entre peticiones; margen por 429 observados
 
 # tema → consulta (por validar en BACKLOG)
 CONSULTAS = {
@@ -56,8 +59,11 @@ def parsear(respuesta: dict, tema: str, modo: str = "timelinetone", excluir_desd
 
 def descargar(consulta: str, timespan: str = "3m", modo: str = "timelinetone", rapido: bool = False) -> dict:
     # GDELT tarda 20-50 s en responder aun sano (medido 2026-11-23): sin timeout corto.
-    s = sesion(reintentos=1 if rapido else 4)
+    # Un 429 significa límite de tasa por IP: no se reintenta en caliente, se avisa.
+    s = sesion(reintentos=0 if rapido else 2, reintentar_429=False)
     r = s.get(BASE, params={"query": consulta, "mode": modo, "format": "json", "timespan": timespan}, timeout=TIMEOUT_LENTO)
+    if r.status_code == 429:
+        raise Aviso("GDELT 429: límite de tasa por IP. Esperar ~15 min antes de volver a consultar")
     r.raise_for_status()
     if not r.text.strip().startswith("{"):
         # GDELT responde texto plano ante consultas inválidas o exceso de peticiones
