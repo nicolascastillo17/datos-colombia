@@ -13,6 +13,16 @@ qué quedó pendiente. Formato:
 
 ---
 
+## 2026-11-23 — CI activo y `main` protegida
+
+**Fase:** infraestructura
+
+- `ci.yml` subido; primer CI en verde (3.10 y 3.12).
+- Regla de protección en `main`: PR obligatorio, checks `pruebas (3.10)` y
+  `pruebas (3.12)` requeridos, sin aprobaciones (un solo mantenedor).
+- Desde aquí todo cambio entra por rama + PR, incluida esta entrada.
+- `sql/01_grants.sql`: roles `escritor_cron` (sin DDL, como en Griky) y `lector`.
+
 ## 2026-11-23 — Repo público creado
 
 **Fase:** infraestructura
