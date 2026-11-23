@@ -1,15 +1,18 @@
-# Extracción diaria. Inactivo hasta aceptar ADR 0002: descomentar `schedule`.
+# Extracción y carga diaria a Neon (ADR 0002). Corre solo en main; usa secrets.
 name: extraer
 
 on:
   workflow_dispatch:
-  # schedule:
-  #   - cron: "17 13 * * *"   # 08:17 Bogotá
+  schedule:
+    - cron: "17 13 * * *"   # 08:17 Bogotá (13:17 UTC)
+
+permissions:
+  contents: read
 
 jobs:
-  extraer:
+  extraer-y-cargar:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -17,7 +20,20 @@ jobs:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
       - run: pytest -q
-      - run: python -m datos_colombia extraer todas
+      - name: Extraer
+        # Fallas de fuentes externas (Banco Mundial intermitente, GDELT 429) no
+        # bloquean la carga de las que sí respondieron.
+        continue-on-error: true
+        run: python -m datos_colombia extraer todas
         env:
           DATOS_GOV_APP_TOKEN: ${{ secrets.DATOS_GOV_APP_TOKEN }}
-      # Pendiente ADR 0002: cargar data/raw a Postgres (DATABASE_URL en secrets)
+      - name: Cargar a Neon
+        run: python -m datos_colombia cargar
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Conservar Parquet de la corrida
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-${{ github.run_id }}
+          path: data/raw
+          retention-days: 14
