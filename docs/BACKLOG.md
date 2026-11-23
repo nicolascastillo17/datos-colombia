@@ -8,9 +8,8 @@
   por dataflow. Inspeccionar `SUBJECT` y filtrar/mapear antes de publicar.
 - 🟡 Banco Mundial intermitente: si persiste, evaluar API alternativa del Banco
   Mundial o dejarlo como fuente semanal con tolerancia a fallas.
-- 🔴 Subir `ci.yml` y plantillas de `.github`; proteger `main` (PR + check `pruebas`).
-- 🔴 Crear proyecto Neon Free; aplicar `sql/00_schemas.sql`; roles
-  `escritor_cron` (solo `raw_series`) y `lector` (solo SELECT en vistas).
+- 🔴 Crear proyecto Neon Free (us-east-1); crear roles `escritor_cron` y
+  `lector` en consola; aplicar `sql/00_schemas.sql` y `sql/01_grants.sql`.
 - 🟡 Cargador `raw → Postgres` (`python -m datos_colombia cargar`): upsert de
   Parquet en `raw_series.observaciones` por (fuente, serie_id, fecha).
 - 🟡 Secrets en GitHub (`DATABASE_URL`, `DATOS_GOV_APP_TOKEN`) y encender el cron
