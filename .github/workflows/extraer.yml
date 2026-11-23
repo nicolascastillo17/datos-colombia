@@ -1,0 +1,23 @@
+# Extracción diaria. Inactivo hasta aceptar ADR 0002: descomentar `schedule`.
+name: extraer
+
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: "17 13 * * *"   # 08:17 Bogotá
+
+jobs:
+  extraer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+      - run: python -m datos_colombia extraer todas
+        env:
+          DATOS_GOV_APP_TOKEN: ${{ secrets.DATOS_GOV_APP_TOKEN }}
+      # Pendiente ADR 0002: cargar data/raw a Postgres (DATABASE_URL en secrets)

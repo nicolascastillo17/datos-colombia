@@ -1,0 +1,13 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+data/*
+!data/.gitkeep
+dashboards/node_modules/
+dashboards/build/
+dashboards/.evidence/
+*.egg-info/
