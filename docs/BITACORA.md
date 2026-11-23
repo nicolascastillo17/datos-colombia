@@ -13,6 +13,22 @@ qué quedó pendiente. Formato:
 
 ---
 
+## 2026-11-23 — Repo público creado
+
+**Fase:** infraestructura
+
+**Qué pasó:**
+- Repo `nicolascastillo17/datos-colombia` creado y primer push (`f2d1a9a`).
+- Cuenta personal separada de Griky por alias SSH e `includeIf` de git (ver
+  INFRAESTRUCTURA). El primer commit salió firmado con el correo de Griky; se
+  corrigió con `--amend --reset-author` antes del push.
+- `src/datos_colombia.egg-info/` (generado por `pip install -e`) se había
+  incluido; se agregó `*.egg-info/` a `.gitignore` y se retiró del índice.
+- `ci.yml` y las plantillas de `.github` no entraron en el primer push (el zip
+  no se descomprimió); se suben en el segundo commit.
+
+**Pendiente:** proteger `main` tras el primer CI verde.
+
 ## 2026-11-23 — Tercera corrida: GDELT 429
 
 **Fase:** extracción

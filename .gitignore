@@ -10,4 +10,3 @@ data/*
 dashboards/node_modules/
 dashboards/build/
 dashboards/.evidence/
-*.egg-info/

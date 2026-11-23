@@ -8,7 +8,7 @@
   por dataflow. Inspeccionar `SUBJECT` y filtrar/mapear antes de publicar.
 - 🟡 Banco Mundial intermitente: si persiste, evaluar API alternativa del Banco
   Mundial o dejarlo como fuente semanal con tolerancia a fallas.
-- 🔴 Crear repo público en GitHub, primer push, proteger `main` (PR + CI).
+- 🔴 Subir `ci.yml` y plantillas de `.github`; proteger `main` (PR + check `pruebas`).
 - 🔴 Crear proyecto Neon Free; aplicar `sql/00_schemas.sql`; roles
   `escritor_cron` (solo `raw_series`) y `lector` (solo SELECT en vistas).
 - 🟡 Cargador `raw → Postgres` (`python -m datos_colombia cargar`): upsert de
