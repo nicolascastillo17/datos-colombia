@@ -21,8 +21,10 @@ credenciales ni datos de `data/` en commits.
    está en el BACKLOG, decirlo con su prioridad en vez de presentarla como nueva.
 2. Al diagnosticar una falla: ubicar primero la fase (extracción / carga /
    transformación) y luego la causa.
-3. Consultas analíticas: solo lectura. Cambios de esquema solo por archivos
-   `sql/NN_*.sql` numerados, nunca DDL suelto.
+3. Consultas analíticas: solo lectura (rol `lector`). Cambios de esquema solo por
+   archivos `sql/NN_*.sql` numerados e idempotentes, aplicados con
+   `python -m datos_colombia aplicar-sql` (rol dueño, local); nunca DDL suelto.
+   El cron (`escritor_cron`) no ejecuta DDL.
 4. Toda serie nueva entra por un módulo en `src/datos_colombia/fuentes/`, con
    parser puro probado en `tests/` con un fixture real recortado.
 5. Toda fuente nueva se registra en `docs/FUENTES.md` con estado

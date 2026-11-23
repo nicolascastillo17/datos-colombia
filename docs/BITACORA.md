@@ -13,6 +13,72 @@ qué quedó pendiente. Formato:
 
 ---
 
+## 2026-11-23 — BanRep recargado; DBeaver y conector MCP local
+
+**Fase:** carga / infraestructura
+
+- `.env` tenía cruzadas `DATABASE_URL` y `DATABASE_URL_OWNER` (la primera carga
+  entró como `neondb_owner`). Corregido; `verificar_dueno()` en `aplicar-sql`
+  ahora detecta el caso. BanRep borrado con el dueño y recargado con el nuevo
+  `serie_id`; consulta de verificación OK desde DBeaver (rol `lector`).
+- Conector para Claude: servidor MCP local (`.mcp.json` + `mcp/dbhub.toml`,
+  DBHub 1.2.3, solo lectura) en vez de extensión `.mcpb`, porque la cuenta de
+  Claude en uso pertenece a la organización Griky, cuyo Allowlist bloquea
+  extensiones fuera de su registro.
+
+## 2026-11-23 — Primera carga real a Neon y corrección de `serie_id` BanRep
+
+**Fase:** extracción (parser) / carga
+
+**Resultado de la primera corrida:**
+- `extraer todas`: banrep 124,5 s (historia completa: tpm 10.510, trm 21.797,
+  ibr 28.280, dtf 15.659, uvr 19.326, colcap 226, agregados 2.570, tes 855);
+  datos_gov 8.391; banco_mundial 396 (respondió); gdelt ❌ 429; dane ✅;
+  fedesarrollo ❌ (debía ser aviso).
+- `cargar`: 108.010 filas → 83.362 nuevas y **24.648 "duplicadas en lote"**.
+
+**Diagnóstico:** las duplicadas no eran repeticiones. BanRep publica varias
+series con el mismo `SUBJECT` distinguidas por otras dimensiones; en IBR,
+`IRIBRM00` existe con `UNIT_MEASURE=ER` (efectiva) y `NR` (nominal). El
+`serie_id` solo usaba `SUBJECT` → el cargador se quedó con una de las dos al
+azar. Datos de BanRep en Neon quedaron mezclados.
+
+**Corrección:**
+- `serie_id` BanRep = `<conjunto>:<SUBJECT>.<dimensiones ≠ _Z>`, p. ej.
+  `ibr:IRIBRM00.ER`, `tpm:IRCBRM01.PA`.
+- El cargador ahora **aborta** si un lote trae valores distintos para la misma
+  (fuente, serie_id, fecha) (`SerieAmbigua`); solo descarta duplicados idénticos.
+- GDELT: sin reintentos ante 429 (insistir prolonga el bloqueo); pausa 10 s.
+- Fedesarrollo sin CSV en `extraer` → ⚠️ aviso, no ❌.
+- `startPeriod` de BanRep se respeta solo por año (desde 2026-11-01 → desde 2026-01-02).
+- Pruebas: 17 (nuevas: series ER/NR, carga que aborta ante `serie_id` ambiguo).
+
+**Pendiente:** borrar filas `banrep` de Neon (rol dueño), re-extraer y recargar.
+
+## 2026-11-23 — Neon creado; `aplicar-sql` y `cargar`
+
+**Fase:** carga / infraestructura
+
+**Qué pasó:**
+- Proyecto Neon `datos-colombia` (rama `production`, base `neondb`).
+- Hallazgo: los roles creados desde la consola de Neon heredan `neon_superuser`
+  (CREATEDB, CREATEROLE, BYPASSRLS). `escritor_cron` y `lector` se crearon por
+  SQL; verificado `pg_has_role(..., 'neon_superuser', 'member') = false`.
+- Nuevo `python -m datos_colombia aplicar-sql`: aplica `sql/NN_*.sql` en orden,
+  una transacción por archivo, con el rol dueño (equivalente a `setup_schema.py`
+  de Griky). Los archivos deben ser idempotentes.
+- Nuevo `python -m datos_colombia cargar [fuente] [--todo]`: upsert de la última
+  partición Parquet por fuente/conjunto en `raw_series.observaciones`; solo
+  actualiza si cambió valor/unidad/frecuencia; resuelve duplicados del lote.
+  La base acumula la historia (GDELT solo expone una ventana reciente).
+- `tests/test_db.py` contra Postgres 16 real: idempotencia de `aplicar-sql`,
+  upsert, revisión de un valor, `escritor_cron` sin DDL y `lector` sin escritura.
+  Se omiten sin `TEST_DATABASE_URL` (CI no tiene Postgres).
+- Corrección del diagnóstico anterior: las 326 obs de TPM no son varias series
+  sino ≈ los días desde 2026-01-01; `startPeriod` parece ignorarse.
+
+**Pendiente:** completar `.env`, primera carga real, secret en GitHub y cron.
+
 ## 2026-11-23 — CI activo y `main` protegida
 
 **Fase:** infraestructura

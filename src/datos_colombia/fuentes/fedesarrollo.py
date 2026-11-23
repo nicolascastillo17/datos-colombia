@@ -37,7 +37,7 @@ def parsear(lineas) -> list[Observacion]:
 def extraer() -> dict[str, int]:
     ruta = ruta_manual()
     if not ruta.exists():
-        raise FileNotFoundError(f"Falta {ruta} (columnas: fecha,icc,iec,ice)")
+        raise Aviso(f"carga manual pendiente: falta {ruta} (columnas fecha,icc,iec,ice)")
     with ruta.open(encoding="utf-8") as fh:
         obs = parsear(fh)
     guardar_observaciones(obs, FUENTE, CONJUNTO)

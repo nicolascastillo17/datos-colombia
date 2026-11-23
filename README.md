@@ -45,7 +45,9 @@ cp .env.example .env            # token opcional de datos.gov.co
 python -m datos_colombia probar          # ping a cada fuente, sin escribir nada
 python -m datos_colombia extraer banrep  # escribe data/raw/banrep/...parquet
 python -m datos_colombia extraer todas
-pytest -q
+python -m datos_colombia cargar          # data/raw → Neon (DATABASE_URL, rol escritor_cron)
+python -m datos_colombia aplicar-sql     # sql/NN_*.sql → Neon (DATABASE_URL_OWNER, solo local)
+pytest -q                                # pruebas de BD solo si TEST_DATABASE_URL está definida
 ```
 
 ## Capas de datos

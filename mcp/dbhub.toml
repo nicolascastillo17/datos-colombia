@@ -1,0 +1,14 @@
+# Servidor MCP local de solo lectura (DBHub) para consultar Neon desde Claude
+# Code / Cowork en esta carpeta. Lo declara .mcp.json en la raíz del repo.
+# La cadena de conexión NO va aquí: llega por DATABASE_URL_LECTOR (rol `lector`).
+
+[[sources]]
+id = "datos_colombia"
+dsn = "${DATABASE_URL_LECTOR}"
+query_timeout = 30
+
+[[tools]]
+name = "execute_sql"
+source = "datos_colombia"
+readonly = true   # solo SELECT / WITH / EXPLAIN / SHOW
+max_rows = 1000

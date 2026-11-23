@@ -11,7 +11,10 @@ src/datos_colombia.egg-info/requires.txt
 src/datos_colombia.egg-info/top_level.txt
 src/datos_colombia/comun/__init__.py
 src/datos_colombia/comun/almacen.py
+src/datos_colombia/comun/cargador.py
 src/datos_colombia/comun/config.py
+src/datos_colombia/comun/db.py
+src/datos_colombia/comun/errores.py
 src/datos_colombia/comun/http.py
 src/datos_colombia/fuentes/__init__.py
 src/datos_colombia/fuentes/banco_mundial.py
@@ -20,4 +23,5 @@ src/datos_colombia/fuentes/dane.py
 src/datos_colombia/fuentes/datos_gov.py
 src/datos_colombia/fuentes/fedesarrollo.py
 src/datos_colombia/fuentes/gdelt.py
+tests/test_db.py
 tests/test_parsers.py
